@@ -11,7 +11,7 @@ Somewhere to roll: platforms, gaps, and a reason to get to the end.
 
 A course is a list of platforms, a start, a goal, and some gems. A platform is a
 box: a position, a width, a height and a depth. Nothing is sloped, because
-blitkit collides against boxes.
+blitzkit collides against boxes.
 
 **Falling off** is the hazard. Below a course's floor level there is nothing, and
 a marble that drops past it is out, per spec 0003.

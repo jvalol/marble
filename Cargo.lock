@@ -234,10 +234,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
-name = "blitkit"
-version = "0.2.7"
+name = "blitzkit"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bec3470730fd4f4fe12ee27a63c69643f85abd0be22b945d0e5ba12ae1a2cc60"
+checksum = "085996f8767693134fd5a3826f30421c9c86efcc6842964093f41002ed647c30"
 dependencies = [
  "bytemuck",
  "env_logger",
@@ -1201,7 +1201,7 @@ dependencies = [
 name = "marble"
 version = "0.1.0"
 dependencies = [
- "blitkit",
+ "blitzkit",
  "glam",
 ]
 

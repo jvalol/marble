@@ -18,7 +18,7 @@ should be rather than snapping, which keeps a fast roll from jerking the view.
 all once the cursor is locked. The wheel changes the distance, between 5 and 20.
 
 **Locking the cursor** is the space bar. Locked, the pointer disappears and
-turning never stops at the screen edge, per blitkit's spec 0013.
+turning never stops at the screen edge, per blitzkit's spec 0013.
 
 **Rolling** is WASD or the arrow keys, relative to the camera, per spec 0001.
 
@@ -26,7 +26,7 @@ turning never stops at the screen edge, per blitkit's spec 0013.
 
 **The camera never passes through a platform.** It is pulled in toward the
 marble when a platform is between them, so the marble does not disappear behind
-a wall. blitkit's ray cast against the course's boxes is what finds that.
+a wall. blitzkit's ray cast against the course's boxes is what finds that.
 
 ## Acceptance criteria
 

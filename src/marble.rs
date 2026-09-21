@@ -1,6 +1,6 @@
 //! The rolling, falling ball. See `specs/0001-rolling.md`.
 
-use blitkit::collision::{move_and_slide, Aabb, Sphere};
+use blitzkit::collision::{move_and_slide, Aabb, Sphere};
 use glam::{vec3, Vec2, Vec3};
 
 pub const RADIUS: f32 = 0.4;

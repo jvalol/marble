@@ -1,6 +1,6 @@
 //! The camera that follows the marble. See `specs/0004-camera-and-controls.md`.
 
-use blitkit::collision::{Aabb, Ray};
+use blitzkit::collision::{Aabb, Ray};
 use glam::{vec3, Vec3};
 
 pub const DEFAULT_DISTANCE: f32 = 9.0;

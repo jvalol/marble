@@ -28,7 +28,7 @@ That is what friction applies to, and what lets the marble be steered: in the
 air a player has a quarter of the usual control, enough to save a jump but not
 enough to fly.
 
-Movement goes through blitkit's `move_and_slide`, so the marble slides along
+Movement goes through blitzkit's `move_and_slide`, so the marble slides along
 walls rather than sticking, and never passes through a platform however fast it
 is going.
 
@@ -54,4 +54,4 @@ wall keeps most of its pace; one driven straight in stops.
 ## Out of scope
 
 Bouncing, spin, the marble visibly rotating as it rolls, ramps and slopes, and
-any surface that is not flat. blitkit's collision is boxes, per its spec 0014.
+any surface that is not flat. blitzkit's collision is boxes, per its spec 0014.

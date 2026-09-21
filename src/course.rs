@@ -1,7 +1,7 @@
 //! Platforms, gems, checkpoints and the goal. See `specs/0002-course.md`.
 
 use crate::marble;
-use blitkit::collision::{Aabb, Sphere};
+use blitzkit::collision::{Aabb, Sphere};
 use glam::{vec3, Vec3};
 
 pub const GEM_RADIUS: f32 = 0.3;

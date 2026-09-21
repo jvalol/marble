@@ -1,4 +1,4 @@
-use blitkit::start;
+use blitzkit::start;
 
 mod camera;
 mod course;

@@ -1,7 +1,7 @@
 # marble
 
 Roll a marble across a course of platforms to a goal, against a clock. The first
-3D game built on `blitkit`, which lives at `../blitkit` and owns the window,
+3D game built on `blitzkit`, which lives at `../blitzkit` and owns the window,
 rendering, input, collision and sound.
 
 ## Build and test
@@ -30,7 +30,7 @@ Behavior changes are spec driven:
 
 ## Layout
 
-- `src/main.rs` — hands a `MarbleGame` to `blitkit::start`.
+- `src/main.rs` — hands a `MarbleGame` to `blitzkit::start`.
 - `src/marble_game.rs` — the `Game` impl and the state machine.
 - `src/marble.rs` — the rolling, falling ball.
 - `src/course.rs` — platforms, gems, checkpoints, the goal.
@@ -41,7 +41,7 @@ Behavior changes are spec driven:
 ## Conventions
 
 - **The engine does the hard parts.** Collision, rays and rendering come from
-  blitkit. This repo is game rules.
+  blitzkit. This repo is game rules.
 - **Units are world units and seconds.** Speeds are per second, multiplied by
   the frame's delta time.
 - **Game logic is pure.** It takes input and state and touches no GPU, window or

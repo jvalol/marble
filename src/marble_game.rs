@@ -1,15 +1,15 @@
 //! The `Game` impl: what happens each frame, and what gets drawn.
 
-use blitkit::camera::Camera;
-use blitkit::geometry::Geometry;
-use blitkit::keyboard::KeyboardInput;
-use blitkit::mesh::{MeshData, Transform};
-use blitkit::mouse::MouseInput;
-use blitkit::renderer::render_text::{RenderText, TextRenderer, UNBOUNDED_F32};
-use blitkit::renderer::scene::{MeshId, Scene};
-use blitkit::renderer::Renderer;
-use blitkit::sound::SoundSystem;
-use blitkit::{Game, MAX_DELTA_TIME};
+use blitzkit::camera::Camera;
+use blitzkit::geometry::Geometry;
+use blitzkit::keyboard::KeyboardInput;
+use blitzkit::mesh::{MeshData, Transform};
+use blitzkit::mouse::MouseInput;
+use blitzkit::renderer::render_text::{RenderText, TextRenderer, UNBOUNDED_F32};
+use blitzkit::renderer::scene::{MeshId, Scene};
+use blitzkit::renderer::Renderer;
+use blitzkit::sound::SoundSystem;
+use blitzkit::{Game, MAX_DELTA_TIME};
 use glam::{vec2, vec4, Vec2, Vec3, Vec4};
 
 use crate::camera::Follow;
@@ -101,7 +101,7 @@ impl Game for MarbleGame {
     self.cube = Some(renderer.add_mesh(&MeshData::cube()));
 
     // the shadow map covers the whole course rather than the default box
-    let mut bounds = blitkit::collision::Aabb::empty();
+    let mut bounds = blitzkit::collision::Aabb::empty();
     for platform in self.course.platforms.iter() {
       bounds = bounds.union(&platform.bounds);
     }
@@ -326,7 +326,7 @@ mod tests {
     game.run.first_move();
     game.run.tick(5.0);
     game.run.record_fall();
-    game.course.collect(&blitkit::collision::Sphere::new(
+    game.course.collect(&blitzkit::collision::Sphere::new(
       game.course.gems[0].position,
       marble::RADIUS,
     ));
@@ -384,5 +384,34 @@ mod tests {
     game.step(1.0 / 60.0);
 
     assert_eq!(game.run.phase, Phase::Finished);
+  }
+}
+
+#[cfg(test)]
+mod traces {
+  use super::*;
+
+  #[test]
+  #[ignore]
+  fn trace_rolling_forward_from_the_start() {
+    let mut game = MarbleGame::new();
+    game.input.forward = true;
+
+    for frame in 0..240 {
+      game.step(1.0 / 60.0);
+      if frame % 15 == 0 {
+        println!(
+          "frame {:3} pos {:6.2},{:6.2},{:7.2} vel {:6.2},{:6.2},{:7.2} ground {}",
+          frame,
+          game.marble.position.x,
+          game.marble.position.y,
+          game.marble.position.z,
+          game.marble.velocity.x,
+          game.marble.velocity.y,
+          game.marble.velocity.z,
+          game.marble.on_ground
+        );
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 //! Engine events to held flags. See `specs/0004-camera-and-controls.md`.
 
-use blitkit::keyboard::{KeyboardInput, KeyboardKey, KeyboardKeyState};
-use blitkit::mouse::{MouseButton, MouseInput};
+use blitzkit::keyboard::{KeyboardInput, KeyboardKey, KeyboardKeyState};
+use blitzkit::mouse::{MouseButton, MouseInput};
 use glam::{Vec2, Vec3};
 
 #[derive(Debug, Default)]
@@ -59,7 +59,7 @@ impl Input {
   }
 
   /// Raw motion turns the camera while dragging, or always when the cursor is
-  /// locked, per blitkit's spec 0013.
+  /// locked, per blitzkit's spec 0013.
   pub fn mouse_motion(&mut self, delta: Vec2, cursor_locked: bool) {
     if self.dragging || cursor_locked {
       self.turn += delta.x * 0.005;
@@ -140,7 +140,7 @@ mod tests {
     input.clear_frame();
     input.mouse(MouseInput::new(
       MouseButton::Left,
-      blitkit::mouse::ButtonState::Pressed,
+      blitzkit::mouse::ButtonState::Pressed,
     ));
     input.mouse_motion(Vec2::new(10.0, 0.0), false);
     assert!(input.turn > 0.0, "dragging should turn it");
