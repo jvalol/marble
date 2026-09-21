@@ -1,0 +1,10 @@
+[package]
+name = "marble"
+version = "0.1.0"
+authors = ["Jake Van Alstyne 🎩 <jakeva@gmail.com>"]
+edition = "2018"
+rust-version = "1.87"
+
+[dependencies]
+blitkit = "0.2"
+glam = "0.33"
