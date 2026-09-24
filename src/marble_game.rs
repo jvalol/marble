@@ -386,32 +386,3 @@ mod tests {
     assert_eq!(game.run.phase, Phase::Finished);
   }
 }
-
-#[cfg(test)]
-mod traces {
-  use super::*;
-
-  #[test]
-  #[ignore]
-  fn trace_rolling_forward_from_the_start() {
-    let mut game = MarbleGame::new();
-    game.input.forward = true;
-
-    for frame in 0..240 {
-      game.step(1.0 / 60.0);
-      if frame % 15 == 0 {
-        println!(
-          "frame {:3} pos {:6.2},{:6.2},{:7.2} vel {:6.2},{:6.2},{:7.2} ground {}",
-          frame,
-          game.marble.position.x,
-          game.marble.position.y,
-          game.marble.position.z,
-          game.marble.velocity.x,
-          game.marble.velocity.y,
-          game.marble.velocity.z,
-          game.marble.on_ground
-        );
-      }
-    }
-  }
-}

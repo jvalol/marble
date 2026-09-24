@@ -244,33 +244,3 @@ mod tests {
     assert!(marble.velocity.z > 7.0, "along the wall: {}", marble.velocity.z);
   }
 }
-
-#[cfg(test)]
-mod debug {
-  use super::*;
-
-  #[test]
-  #[ignore]
-  fn trace_a_long_roll() {
-    let floor = Aabb::from_center_size(vec3(0.0, -0.5, 0.0), vec3(40.0, 1.0, 40.0));
-    let mut marble = Marble::new(vec3(0.0, RADIUS, 0.0));
-    marble.on_ground = true;
-
-    for frame in 0..400 {
-      marble.update(Vec3::X, 1.0 / 60.0, &[floor]);
-      if frame % 40 == 0 {
-        println!(
-          "frame {:3} pos {:7.2},{:6.2},{:5.2} vel {:6.2},{:7.2} speed {:5.2} ground {}",
-          frame,
-          marble.position.x,
-          marble.position.y,
-          marble.position.z,
-          marble.velocity.x,
-          marble.velocity.y,
-          marble.speed(),
-          marble.on_ground
-        );
-      }
-    }
-  }
-}
