@@ -74,7 +74,7 @@ impl Course {
       // a wide pad to get the feel of it
       Platform::new(vec3(0.0, -0.5, 4.0), vec3(10.0, 1.0, 10.0), PlatformKind::Plain),
       // a straight run to build up speed
-      Platform::new(vec3(0.0, -0.5, -6.0), vec3(5.0, 1.0, 12.0), PlatformKind::Checkpoint),
+      Platform::new(vec3(0.0, -0.5, -6.5), vec3(5.0, 1.0, 11.0), PlatformKind::Checkpoint),
       // the gap: a drop, so only speed carries you across
       Platform::new(vec3(0.0, -2.5, -19.0), vec3(9.0, 1.0, 8.0), PlatformKind::Checkpoint),
       // a narrow ledge where speed is the enemy
@@ -307,6 +307,26 @@ mod tests {
   }
 
   #[test]
+  fn platforms_do_not_interpenetrate() {
+    let course = Course::first();
+
+    for (i, from) in course.platforms.iter().enumerate() {
+      for (j, to) in course.platforms.iter().enumerate().skip(i + 1) {
+        let shared = shared_volume(&from.bounds, &to.bounds);
+
+        assert!(
+          shared <= 0.0,
+          "platforms {} and {} share {:.2} cubic units, so their faces land in \
+           the same plane and fight over which one the camera sees",
+          i,
+          j,
+          shared
+        );
+      }
+    }
+  }
+
+  #[test]
   fn the_course_is_connected() {
     let course = Course::first();
 
@@ -332,6 +352,16 @@ mod tests {
         reach
       );
     }
+  }
+
+  /// How much space two boxes have in common. Platforms laid end to end touch
+  /// without sharing any, which is what keeps their seams clean.
+  fn shared_volume(a: &Aabb, b: &Aabb) -> f32 {
+    let min = a.min.max(b.min);
+    let max = a.max.min(b.max);
+    let size = (max - min).max(Vec3::ZERO);
+
+    size.x * size.y * size.z
   }
 
   /// How far apart two boxes are on the ground, zero when they overlap.

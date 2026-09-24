@@ -21,6 +21,11 @@ sphere against a small sphere around the gem. A collected gem disappears and is
 counted. They are optional, a reason to take the harder path rather than a gate
 on finishing.
 
+Platforms may touch, and laying them end to end is how a run continues across
+one. They may not overlap: two boxes sharing space put two coplanar faces in
+front of the camera, and the depth buffer picks between them pixel by pixel,
+which reads as a band of stripes along the seam.
+
 **The goal** is a platform that ends the course when the marble rests on it.
 
 **Checkpoints** are platforms marked as such. Rolling onto one remembers it, and
@@ -41,11 +46,14 @@ ledge that needs restraint, and a climb of stepped platforms to the goal.
 - A later checkpoint replaces an earlier one. — `course::tests::the_latest_checkpoint_wins`
 - Every gem sits above a platform, so none is unreachable. — `course::tests::every_gem_is_reachable`
 - Every platform is reachable from the one before it. — `course::tests::the_course_is_connected`
+- No two platforms occupy the same space, which would put two faces in one plane for the depth buffer to argue over. — `course::tests::platforms_do_not_interpenetrate`
 
 ### Verified by hand
 
 - The course can be finished, and the first gap is crossable at full speed but
   not from standing.
+- The seam between the start pad and the run reads as one clean edge, with no
+  band of stripes along it.
 
 ## Out of scope
 
