@@ -1,6 +1,6 @@
 # 0004 Camera and controls
 
-**Status:** draft
+**Status:** implemented
 **Date:** 2026-09-21
 
 ## Goal

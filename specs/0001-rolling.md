@@ -1,6 +1,6 @@
 # 0001 Rolling
 
-**Status:** draft
+**Status:** implemented
 **Date:** 2026-09-21
 
 ## Goal
