@@ -1,8 +1,10 @@
 # marble
 
-Roll a marble across a course of platforms to a goal, against a clock. The first
-3D game built on `blitzkit`, which lives at `../blitzkit` and owns the window,
-rendering, input, collision and sound.
+Roll a marble across a course of platforms to a goal, against a clock. The
+fourth game on `blitzkit` and the first in 3D. The engine owns the window,
+rendering, input, collision and sound. The dependency is the published crate,
+overridden by the engine checkout at `../blitzkit` when built inside this
+project folder.
 
 ## Build and test
 
