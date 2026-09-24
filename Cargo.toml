@@ -8,3 +8,4 @@ rust-version = "1.87"
 [dependencies]
 blitzkit = "0.4"
 glam = "0.33"
+rodio = { version = "0.22", default-features = false }

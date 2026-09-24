@@ -17,6 +17,7 @@ use crate::course::{Course, PlatformKind};
 use crate::input::{drive_direction, Input};
 use crate::marble::{self, Marble};
 use crate::run::{handle_fall, Phase, Run};
+use crate::thud;
 
 const MARBLE_COLOR: Vec4 = Vec4::new(0.95, 0.55, 0.15, 1.0);
 const PLAIN_COLOR: Vec4 = Vec4::new(0.42, 0.45, 0.52, 1.0);
@@ -130,7 +131,7 @@ impl Game for MarbleGame {
         dt: f32,
         _geometry: &mut Geometry,
         text_renderer: &mut TextRenderer,
-        _sound_system: &SoundSystem,
+        sound_system: &SoundSystem,
     ) {
         let dt = dt.min(MAX_DELTA_TIME);
 
@@ -144,6 +145,13 @@ impl Game for MarbleGame {
         if self.run.is_playing() {
             self.time += dt;
             self.step(dt);
+
+            // a landing the step found, loud in proportion to the drop
+            if let Some(impact) = self.marble.landing.take() {
+                if let Some(volume) = thud::volume(impact) {
+                    sound_system.queue(thud::thud(volume));
+                }
+            }
         } else if self.run.phase == Phase::Finished && self.input.enter {
             self.restart();
         }

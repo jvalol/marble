@@ -35,6 +35,10 @@ pub struct Marble {
     pub position: Vec3,
     pub velocity: Vec3,
     pub on_ground: bool,
+    /// The downward speed of a landing that happened this update, if one did.
+    /// See `specs/0005-landing-sound.md`. Read it after `update` and take it;
+    /// the next `update` overwrites it either way.
+    pub landing: Option<f32>,
 }
 
 impl Marble {
@@ -43,6 +47,7 @@ impl Marble {
             position,
             velocity: Vec3::ZERO,
             on_ground: false,
+            landing: None,
         }
     }
 
@@ -52,6 +57,7 @@ impl Marble {
         self.position = position;
         self.velocity = Vec3::ZERO;
         self.on_ground = false;
+        self.landing = None;
     }
 
     pub fn sphere(&self) -> Sphere {
@@ -64,6 +70,7 @@ impl Marble {
 
     /// One step: push, coast, fall, then move through the course.
     pub fn update(&mut self, drive: Vec3, dt: f32, colliders: &[Aabb]) {
+        let was_on_ground = self.on_ground;
         let control = if self.on_ground { 1.0 } else { AIR_CONTROL };
         let mut flat = vec3(self.velocity.x, 0.0, self.velocity.z);
 
@@ -79,6 +86,10 @@ impl Marble {
         }
 
         let falling = (self.velocity.y - GRAVITY * dt).max(-MAX_FALL);
+        // How fast this frame moves down, taken here because the slide below
+        // zeroes the vertical speed against whatever it hits. After the move
+        // there is nothing left to measure.
+        let impact = (-falling).max(0.0);
         self.velocity = vec3(flat.x, falling, flat.z);
 
         let wanted = self.velocity * dt;
@@ -95,6 +106,7 @@ impl Marble {
         }
 
         self.on_ground = is_on_ground(self.position, colliders);
+        self.landing = (!was_on_ground && self.on_ground).then_some(impact);
     }
 }
 
@@ -207,6 +219,74 @@ mod tests {
             marble.velocity.y >= -MAX_FALL - 1e-3,
             "{}",
             marble.velocity.y
+        );
+    }
+
+    /// Drops a marble from `height` and returns the landing it reported, per
+    /// `specs/0005-landing-sound.md`.
+    fn drop_from(height: f32) -> Option<f32> {
+        let mut marble = Marble::new(vec3(0.0, height, 0.0));
+
+        for _ in 0..600 {
+            marble.update(Vec3::ZERO, 1.0 / 60.0, &[floor()]);
+            if let Some(impact) = marble.landing {
+                return Some(impact);
+            }
+        }
+
+        None
+    }
+
+    #[test]
+    fn landing_is_a_transition() {
+        let impact = drop_from(4.0).expect("falling onto the floor is a landing");
+        assert!(impact > 0.0, "it landed at {}", impact);
+    }
+
+    #[test]
+    fn resting_does_not_land_again() {
+        let mut marble = resting();
+
+        for _ in 0..120 {
+            marble.update(Vec3::X, 1.0 / 60.0, &[floor()]);
+            assert_eq!(
+                marble.landing, None,
+                "rolling along the floor is not a landing"
+            );
+        }
+    }
+
+    #[test]
+    fn impact_speed_survives_the_landing() {
+        let impact = drop_from(6.0).expect("it lands");
+
+        // the platform takes the vertical speed, so anything reading velocity
+        // after the landing sees nothing
+        assert!(impact > 1.0, "impact was {}", impact);
+    }
+
+    #[test]
+    fn a_harder_drop_lands_harder() {
+        let short = drop_from(1.0).expect("it lands");
+        let long = drop_from(20.0).expect("it lands");
+
+        assert!(long > short, "{} should beat {}", long, short);
+    }
+
+    #[test]
+    fn a_checkpoint_drop_is_silent() {
+        // a fall puts the marble back on its checkpoint, a platform's height
+        // above the floor, and that short drop should not thud
+        let mut marble = resting();
+        marble.reset_to(vec3(0.0, RADIUS, 0.0));
+        assert_eq!(marble.landing, None, "a reset is not a landing");
+
+        let impact = drop_from(RADIUS + 0.05).expect("it settles onto the floor");
+        assert_eq!(
+            crate::thud::volume(impact),
+            None,
+            "a settle of {} should be silent",
+            impact
         );
     }
 
