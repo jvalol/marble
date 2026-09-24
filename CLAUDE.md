@@ -49,4 +49,3 @@ Behavior changes are spec driven:
 - **Game logic is pure.** It takes input and state and touches no GPU, window or
   audio, which is what makes it testable.
 - Tests live next to the code in `#[cfg(test)] mod tests`.
-- Two space indentation, matching pong, snake and tetris.

@@ -10,5 +10,5 @@ mod run;
 use marble_game::MarbleGame;
 
 fn main() {
-  start("marble", Box::new(MarbleGame::new()));
+    start("marble", Box::new(MarbleGame::new()));
 }
