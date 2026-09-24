@@ -12,3 +12,4 @@ not a priority, and it never changes once a spec exists.
 | [0002](0002-course.md) | Platforms, gems, checkpoints, the goal |
 | [0003](0003-the-run.md) | The clock, falling, finishing, pausing |
 | [0004](0004-camera-and-controls.md) | The following camera, mouse and keys |
+| [0005](0005-landing-sound.md) | The thud when the marble lands |
