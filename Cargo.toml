@@ -1,10 +1,10 @@
 [package]
 name = "marble"
 version = "0.1.0"
-authors = ["Jake Van Alstyne 🎩 <jakeva@gmail.com>"]
+authors = ["Jake Van Alstyne ☥ <j@jva.lol>"]
 edition = "2018"
 rust-version = "1.87"
 
 [dependencies]
-blitzkit = "0.3"
+blitzkit = "0.4"
 glam = "0.33"

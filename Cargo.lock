@@ -235,9 +235,9 @@ checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
 
 [[package]]
 name = "blitzkit"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "085996f8767693134fd5a3826f30421c9c86efcc6842964093f41002ed647c30"
+checksum = "3e7f3d9a9e29c2ce4e02b27a07512465bf4bcaa03208542e9da75599a4e1d244"
 dependencies = [
  "bytemuck",
  "env_logger",
