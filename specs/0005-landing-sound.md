@@ -32,12 +32,22 @@ at the terminal fall speed of 40. A landing from any height is audible, and the
 longest drop in the course is the loudest thing in it. These numbers are a
 starting point to be tuned by ear, not a result.
 
-**The sound is not positional**, though it was meant to be. blitzkit's
-`queue_spatial` pins the listener's ears at the world origin and offers no way
-to move them, while this course runs out to 100 units on two axes. A thud that
-far out would be panned hard and attenuated to nothing, so it plays flat
-through `queue` instead. Making it positional needs a listener the engine can
-aim, which is a change to blitzkit and a spec of its own.
+**The sound is positional.** The thud plays from where the marble hit, and the
+listener sits where the camera sits, looking where it looks. A landing off to
+one side is heard off to that side, and turning the camera turns it.
+
+That was not possible when this spec was first written. `queue_spatial` pinned
+the listener's ears at the world origin with no way to move them, and this
+course runs out to 100 units on two axes, so a thud at the far end would have
+been panned hard and faded to nothing. It played flat instead, and this spec
+said so and called for "a listener the engine can aim, which is a change to
+blitzkit and a spec of its own". That is now blitzkit's spec 0019, and this is
+the game that asked for it.
+
+**The ears move before the sound is queued**, not after. The camera catches up
+to the marble first, then the listener is set from it, then the thud is
+appended. Queued the other way round, every thud would be heard from where the
+camera was on the previous frame, which at speed is somewhere else.
 
 **One thud per landing.** A landing that happens on the same frame the run
 restarts still plays: the sound follows the marble, not the clock.
@@ -66,6 +76,10 @@ blitzkit's sound system already does. Nothing here panics for want of a speaker.
 - A long drop is loud without clipping, and a short one is present without being
   startling. — fall from the highest platform, then step off the lowest.
 - Rolling along a platform and across the seam between two of them stays silent.
+- A landing off to one side is heard off to that side, and turning the camera
+  brings it round. This is the only check that the ears actually moved:
+  blitzkit's spec 0019 tests where they go, and nothing tests that moving them
+  reaches a speaker.
 
 ## Out of scope
 

@@ -142,22 +142,38 @@ impl Game for MarbleGame {
         self.follow.turn(self.input.turn);
         self.follow.zoom(self.input.zoom);
 
-        if self.run.is_playing() {
+        // held until the camera has caught up, because where the ears are when
+        // a sound is queued is where it is heard from
+        let landing = if self.run.is_playing() {
             self.time += dt;
             self.step(dt);
-
-            // a landing the step found, loud in proportion to the drop
-            if let Some(impact) = self.marble.landing.take() {
-                if let Some(volume) = thud::volume(impact) {
-                    sound_system.queue(thud::thud(volume));
-                }
+            self.marble.landing.take()
+        } else {
+            if self.run.phase == Phase::Finished && self.input.enter {
+                self.restart();
             }
-        } else if self.run.phase == Phase::Finished && self.input.enter {
-            self.restart();
-        }
+            None
+        };
 
         self.follow
             .update(self.marble.position, dt, &self.course.colliders());
+
+        // the ears go where the camera is, looking where it looks, per the
+        // engine's spec 0019. Without this they sit at the world origin, and
+        // this course runs a hundred units out from it.
+        sound_system.set_listener(
+            self.follow.position,
+            self.follow.target - self.follow.position,
+            Vec3::Y,
+        );
+
+        // a landing the step found, loud in proportion to the drop and placed
+        // where the marble hit
+        if let Some(impact) = landing {
+            if let Some(volume) = thud::volume(impact) {
+                sound_system.queue_spatial(thud::thud(volume), self.marble.position.to_array());
+            }
+        }
         self.input.clear_frame();
 
         text_renderer.reset();
