@@ -59,6 +59,26 @@ impl MarbleGame {
         }
     }
 
+    /// Where to put the thud so it is both heard and placed.
+    ///
+    /// The spatial output fades a sound by the square of its distance from the
+    /// ears, measured in the units the ears are spaced in. The camera sits nine
+    /// units back by default and twenty at full zoom, which would put a thud at
+    /// the marble's own position somewhere between a hundredth and a four
+    /// hundredth of its volume. That is silence.
+    ///
+    /// Distance carries nothing here anyway: the camera follows the marble, so
+    /// it is always about the same distance away. Only the direction is worth
+    /// hearing. So the sound goes one ear spacing from the listener, pointed at
+    /// the marble, which keeps the side it came from and leaves the volume to
+    /// `thud::volume` where it belongs.
+    fn thud_position(&self) -> Vec3 {
+        let ears = self.follow.position;
+        let toward = (self.marble.position - ears).normalize_or_zero();
+
+        ears + toward * blitzkit::sound::EAR_DISTANCE
+    }
+
     /// Back to the start of the course with a fresh clock.
     fn restart(&mut self) {
         self.course.reset();
@@ -167,11 +187,11 @@ impl Game for MarbleGame {
             Vec3::Y,
         );
 
-        // a landing the step found, loud in proportion to the drop and placed
-        // where the marble hit
+        // a landing the step found, loud in proportion to the drop and heard
+        // from the side the marble is on
         if let Some(impact) = landing {
             if let Some(volume) = thud::volume(impact) {
-                sound_system.queue_spatial(thud::thud(volume), self.marble.position.to_array());
+                sound_system.queue_spatial(thud::thud(volume), self.thud_position().to_array());
             }
         }
         self.input.clear_frame();
