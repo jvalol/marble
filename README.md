@@ -10,6 +10,6 @@ first 3D game built on [blitzkit](https://github.com/jvalol/blitzkit).
 Part of [blitzkit](https://github.com/jvalol/blitzkit), a graphics engine in
 Rust and the games built on it: [pong](https://github.com/jvalol/pong),
 [snake](https://github.com/jvalol/snake),
-[tetris](https://github.com/jvalol/tetris),
+[tessera](https://github.com/jvalol/tessera),
 [marble](https://github.com/jvalol/marble) and
 [slider](https://github.com/jvalol/slider).
