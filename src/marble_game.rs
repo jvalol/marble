@@ -23,6 +23,22 @@ const MARBLE_COLOR: Vec4 = Vec4::new(0.95, 0.55, 0.15, 1.0);
 /// The skin is already two colours, so the textured ball is tinted with
 /// nothing. MARBLE_COLOR stays for the fallback, which is the ball as it was.
 const SKIN_TINT: Vec4 = Vec4::ONE;
+
+/// How wide to assume the window is until the engine says.
+///
+/// It says in `initialize`, before a frame is drawn, so this is only ever the
+/// value a `MarbleGame` holds between being built and being handed a window.
+const WIDE_AT_FIRST: f32 = 800.0;
+
+/// The finish readout: how far down it sits, how big, and how far apart its
+/// lines. Across is the middle of the window, which the game is told.
+///
+/// Apart is half again the size, which is a line of space between lines rather
+/// than none. Three separate texts carry it, so the gap is this and nothing
+/// else decides it.
+const FINISH_TOP: f32 = 220.0;
+const FINISH_SIZE: f32 = 22.0;
+const FINISH_APART: f32 = FINISH_SIZE * 1.5;
 const PLAIN_COLOR: Vec4 = Vec4::new(0.42, 0.45, 0.52, 1.0);
 const CHECKPOINT_COLOR: Vec4 = Vec4::new(0.35, 0.55, 0.75, 1.0);
 const GOAL_COLOR: Vec4 = Vec4::new(0.35, 0.75, 0.45, 1.0);
@@ -43,6 +59,9 @@ pub struct MarbleGame {
     /// look the same, and spec 0030's spin is wasted.
     skin: Option<blitzkit::renderer::scene::TextureId>,
     cube: Option<MeshId>,
+    /// How wide the window is, so the finish readout can sit in the middle of
+    /// it. The engine says so at startup and on every resize.
+    width: f32,
 }
 
 impl MarbleGame {
@@ -63,6 +82,7 @@ impl MarbleGame {
             sphere: None,
             skin: None,
             cube: None,
+            width: WIDE_AT_FIRST,
         }
     }
 
@@ -142,8 +162,13 @@ impl Game for MarbleGame {
         _geometry: &mut Geometry,
         _text_renderer: &mut TextRenderer,
         _sound_system: &SoundSystem,
-        _window_size: (f32, f32),
+        window_size: (f32, f32),
     ) {
+        self.resized(window_size);
+    }
+
+    fn resized(&mut self, window_size: (f32, f32)) {
+        self.width = window_size.0;
     }
 
     fn before_frame(&mut self, renderer: &mut Renderer) {
@@ -298,22 +323,32 @@ impl MarbleGame {
 
         match self.run.phase {
             Phase::Finished => {
-                let mut done = RenderText {
-                    position: vec2(self.follow.distance * 0.0 + 400.0, 220.0),
-                    bounds: (UNBOUNDED_F32, UNBOUNDED_F32).into(),
-                    color: vec4(1.0, 1.0, 1.0, 1.0),
-                    text: format!(
-                        "finished in {}\n{} of {} gems, {} falls\n\nenter to run it again",
-                        clock(self.run.time),
+                // One text each rather than one with newlines in it. The lines
+                // came out a size apart, and the blank line before the prompt
+                // made that gap twice the first one.
+                // vec!, not an array: edition 2018 hands out references.
+                let done = vec![
+                    format!("finished in {}", clock(self.run.time)),
+                    format!(
+                        "{} of {} gems, {} falls",
                         self.run.gems,
                         self.course.gem_count(),
                         self.run.falls
                     ),
-                    size: 22.0,
-                    ..Default::default()
-                };
-                done.centered = true;
-                text_renderer.push_render_text(done);
+                    String::from("enter to run it again"),
+                ];
+
+                for (n, text) in done.into_iter().enumerate() {
+                    text_renderer.push_render_text(RenderText {
+                        position: vec2(self.width * 0.5, FINISH_TOP + n as f32 * FINISH_APART),
+                        bounds: (UNBOUNDED_F32, UNBOUNDED_F32).into(),
+                        color: vec4(1.0, 1.0, 1.0, 1.0),
+                        text,
+                        size: FINISH_SIZE,
+                        centered: true,
+                        ..Default::default()
+                    });
+                }
             }
             _ => {
                 text_renderer.push_render_text(line(clock(self.run.time), 20.0, 24.0));
@@ -365,6 +400,47 @@ mod tests {
         assert_eq!(clock(9.5), "9.50");
         assert_eq!(clock(59.99), "59.99");
         assert_eq!(clock(61.25), "1:01.25");
+    }
+
+    /// Draws the finish readout into a renderer and hands back the lines.
+    fn finish_lines(width: f32) -> Vec<RenderText> {
+        let mut game = MarbleGame::new();
+        game.resized((width, 600.0));
+        game.run.phase = Phase::Finished;
+
+        let mut text = TextRenderer::new();
+        game.draw_text(&mut text);
+
+        text.render_texts
+    }
+
+    #[test]
+    fn the_finish_readout_sits_in_the_middle_of_the_window() {
+        // it was pinned at 400, which is the middle of a window 800 wide and
+        // nowhere near it in any other
+        for width in [800.0, 1440.0] {
+            for line in finish_lines(width) {
+                assert!(line.centered);
+                assert_eq!(line.position.x, width * 0.5, "at {}", width);
+            }
+        }
+    }
+
+    #[test]
+    fn the_finish_readout_is_evenly_spaced() {
+        // one text with newlines in it put the lines a size apart and the
+        // blank line before the prompt made that gap twice the first
+        let lines = finish_lines(800.0);
+        assert_eq!(lines.len(), 3);
+
+        let gaps: Vec<f32> = lines
+            .windows(2)
+            .map(|pair| pair[1].position.y - pair[0].position.y)
+            .collect();
+
+        assert_eq!(gaps[0], gaps[1], "{:?}", gaps);
+        assert!(gaps[0] > lines[0].size, "{:?}", gaps);
+        assert!(lines.iter().all(|line| !line.text.contains('\n')));
     }
 
     #[test]
