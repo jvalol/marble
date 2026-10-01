@@ -13,3 +13,4 @@ not a priority, and it never changes once a spec exists.
 | [0003](0003-the-run.md) | The clock, falling, finishing, pausing |
 | [0004](0004-camera-and-controls.md) | The following camera, mouse and keys |
 | [0005](0005-landing-sound.md) | The thud when the marble lands |
+| [0006](0006-it-rolls.md) | Real rigid body dynamics, spin, and a skin |

@@ -1,7 +1,9 @@
-//! The rolling, falling ball. See `specs/0001-rolling.md`.
+//! The rolling, falling ball. See `specs/0001-rolling.md` and
+//! `specs/0006-it-rolls.md`.
 
-use blitzkit::collision::{move_and_slide, Aabb, Sphere};
-use glam::{vec3, Vec2, Vec3};
+use blitzkit::collision::{Aabb, Sphere};
+use blitzkit::physics::{self, Body};
+use glam::{vec3, Quat, Vec2, Vec3};
 
 pub const RADIUS: f32 = 0.4;
 /// How hard a held direction pushes, in units per second squared.
@@ -16,6 +18,18 @@ pub const MAX_FALL: f32 = 40.0;
 pub const AIR_CONTROL: f32 = 0.25;
 /// How close a platform has to be below to count as standing on it.
 pub const GROUND_REACH: f32 = 0.08;
+
+/// How heavy the marble is. Nothing else has mass yet, so this only decides
+/// how hard a bounce is, not who wins a shove.
+pub const MASS: f32 = 1.0;
+
+/// How much of a drop comes back. Low: a marble that bounces far is a marble
+/// you are not driving.
+pub const BOUNCE: f32 = 0.18;
+
+/// How much the course grips. High enough that the ball rolls rather than
+/// slides, which is what spec 0030's friction is for.
+pub const GRIP: f32 = 0.9;
 
 /// Where a held direction points in the world, given where the camera is.
 ///
@@ -32,8 +46,13 @@ pub fn drive_direction(camera_angle: f32, input: Vec2) -> Vec3 {
 
 #[derive(Debug, Clone)]
 pub struct Marble {
-    pub position: Vec3,
-    pub velocity: Vec3,
+    /// Position, velocity and spin together, per blitzkit spec 0030. The ball
+    /// used to be a point that was moved and stopped; it has weight now, and
+    /// the course bounces it and turns it.
+    pub body: Body,
+    /// Which way round it has turned, which is the spin added up. Nothing but
+    /// drawing reads it.
+    pub facing: Quat,
     pub on_ground: bool,
     /// The downward speed of a landing that happened this update, if one did.
     /// See `specs/0005-landing-sound.md`. Read it after `update` and take it;
@@ -44,35 +63,50 @@ pub struct Marble {
 impl Marble {
     pub fn new(position: Vec3) -> Self {
         Self {
-            position,
-            velocity: Vec3::ZERO,
+            body: Body::new(position, RADIUS, MASS)
+                .with_restitution(BOUNCE)
+                .with_friction(GRIP),
+            facing: Quat::IDENTITY,
             on_ground: false,
             landing: None,
         }
     }
 
+    pub fn position(&self) -> Vec3 {
+        self.body.position
+    }
+
     /// Puts the marble somewhere and takes all its speed away, which is what a
     /// fall does, per spec 0003.
     pub fn reset_to(&mut self, position: Vec3) {
-        self.position = position;
-        self.velocity = Vec3::ZERO;
+        self.body.position = position;
+        self.body.velocity = Vec3::ZERO;
+        self.body.spin = Vec3::ZERO;
         self.on_ground = false;
         self.landing = None;
     }
 
     pub fn sphere(&self) -> Sphere {
-        Sphere::new(self.position, RADIUS)
+        Sphere::new(self.body.position, RADIUS)
     }
 
     pub fn speed(&self) -> f32 {
-        vec3(self.velocity.x, 0.0, self.velocity.z).length()
+        let moving = self.body.velocity;
+
+        vec3(moving.x, 0.0, moving.z).length()
     }
 
     /// One step: push, coast, fall, then move through the course.
+    /// Drives it, and lets spec 0030 do the falling, hitting and turning.
+    ///
+    /// The handling stays the game's: how hard a held direction pushes, what
+    /// the top speed is, how little of it works in the air, and how a coast
+    /// settles. Physics owns what the course does back, which is the part that
+    /// used to be faked.
     pub fn update(&mut self, drive: Vec3, dt: f32, colliders: &[Aabb]) {
         let was_on_ground = self.on_ground;
         let control = if self.on_ground { 1.0 } else { AIR_CONTROL };
-        let mut flat = vec3(self.velocity.x, 0.0, self.velocity.z);
+        let mut flat = vec3(self.body.velocity.x, 0.0, self.body.velocity.z);
 
         if drive.length_squared() > 0.0 {
             flat += drive.normalize_or_zero() * ACCELERATION * control * dt;
@@ -80,33 +114,44 @@ impl Marble {
                 flat = flat.normalize_or_zero() * MAX_SPEED;
             }
         } else if self.on_ground {
-            // coasting: take a fixed amount off rather than scaling, so it settles
+            // coasting: take a fixed amount off rather than scaling, so it
+            // settles. Rolling costs nothing under spec 0030, so without this
+            // a ball let go of would roll until it fell off something.
             let slowed = (flat.length() - FRICTION * dt).max(0.0);
             flat = flat.normalize_or_zero() * slowed;
         }
 
-        let falling = (self.velocity.y - GRAVITY * dt).max(-MAX_FALL);
-        // How fast this frame moves down, taken here because the slide below
-        // zeroes the vertical speed against whatever it hits. After the move
-        // there is nothing left to measure.
-        let impact = (-falling).max(0.0);
-        self.velocity = vec3(flat.x, falling, flat.z);
+        self.body.velocity = vec3(flat.x, self.body.velocity.y, flat.z);
 
-        let wanted = self.velocity * dt;
-        let before = self.position;
-        self.position = move_and_slide(self.sphere(), self.velocity, dt, colliders);
-        let moved = self.position - before;
+        // how fast it is going down before anything stops it. Taken here
+        // because the step is what takes the speed away, and afterwards there
+        // is nothing left to measure.
+        let impact = (-self.body.velocity.y).max(0.0);
 
-        // whatever the course took, it took: an axis that was blocked loses its
-        // speed, and the others keep theirs, which is what sliding along a wall is
-        for axis in 0..3 {
-            if wanted[axis].abs() > 1e-5 && moved[axis].abs() < wanted[axis].abs() * 0.5 {
-                self.velocity[axis] = 0.0;
-            }
-        }
+        let mut one = [self.body];
+        physics::step(&mut one, colliders, Vec3::NEG_Y * GRAVITY, dt);
+        self.body = one[0];
 
-        self.on_ground = is_on_ground(self.position, colliders);
+        // a long drop stays readable rather than becoming a blur
+        self.body.velocity.y = self.body.velocity.y.max(-MAX_FALL);
+
+        self.turn(dt);
+        self.on_ground = is_on_ground(self.body.position, colliders);
         self.landing = (!was_on_ground && self.on_ground).then_some(impact);
+    }
+
+    /// Adds this step's spin to which way round it is.
+    ///
+    /// Spin is radians a second about the axis it points along, so the turn is
+    /// that axis by that many radians times the time.
+    fn turn(&mut self, dt: f32) {
+        let spin = self.body.spin;
+        let rate = spin.length();
+
+        if rate > 1e-6 {
+            self.facing = Quat::from_axis_angle(spin / rate, rate * dt) * self.facing;
+            self.facing = self.facing.normalize();
+        }
     }
 }
 
@@ -132,6 +177,66 @@ mod tests {
         let mut marble = Marble::new(vec3(0.0, RADIUS, 0.0));
         marble.on_ground = true;
         marble
+    }
+
+    #[test]
+    fn a_rolling_marble_turns() {
+        // spec 0030 spins it through friction, and nothing else does
+        let mut marble = resting();
+        assert_eq!(marble.facing, Quat::IDENTITY);
+
+        for _ in 0..120 {
+            marble.update(vec3(1.0, 0.0, 0.0), 1.0 / 60.0, &[floor()]);
+        }
+
+        assert!(marble.body.spin.length() > 1.0, "it never spun");
+        assert!(
+            marble.facing.angle_between(Quat::IDENTITY) > 0.5,
+            "it spun but never turned"
+        );
+    }
+
+    #[test]
+    fn it_turns_the_way_it_rolls() {
+        // rolling towards positive x turns it about negative z, or it looks
+        // like a ball being dragged backwards
+        let mut marble = resting();
+
+        for _ in 0..120 {
+            marble.update(vec3(1.0, 0.0, 0.0), 1.0 / 60.0, &[floor()]);
+        }
+
+        assert!(
+            marble.body.spin.z < 0.0,
+            "it is rolling the wrong way round"
+        );
+    }
+
+    #[test]
+    fn a_still_marble_does_not_turn() {
+        let mut marble = resting();
+
+        for _ in 0..120 {
+            marble.update(Vec3::ZERO, 1.0 / 60.0, &[floor()]);
+        }
+
+        assert!(
+            marble.facing.angle_between(Quat::IDENTITY) < 0.2,
+            "it turned while standing still"
+        );
+    }
+
+    #[test]
+    fn a_reset_forgets_the_spin() {
+        let mut marble = resting();
+        for _ in 0..60 {
+            marble.update(vec3(1.0, 0.0, 0.0), 1.0 / 60.0, &[floor()]);
+        }
+
+        marble.reset_to(vec3(0.0, 5.0, 0.0));
+
+        assert_eq!(marble.body.spin, Vec3::ZERO);
+        assert_eq!(marble.body.velocity, Vec3::ZERO);
     }
 
     #[test]
@@ -202,8 +307,8 @@ mod tests {
 
         marble.update(Vec3::ZERO, 1.0 / 60.0, &[floor()]);
 
-        assert!(marble.velocity.y < 0.0);
-        assert!(marble.position.y < 10.0);
+        assert!(marble.body.velocity.y < 0.0);
+        assert!(marble.position().y < 10.0);
         assert!(!marble.on_ground);
     }
 
@@ -216,9 +321,9 @@ mod tests {
         }
 
         assert!(
-            marble.velocity.y >= -MAX_FALL - 1e-3,
+            marble.body.velocity.y >= -MAX_FALL - 1e-3,
             "{}",
-            marble.velocity.y
+            marble.body.velocity.y
         );
     }
 
@@ -300,15 +405,15 @@ mod tests {
 
         assert!(marble.on_ground, "it should have landed");
         assert!(
-            marble.velocity.y.abs() < 1.0,
+            marble.body.velocity.y.abs() < 1.0,
             "still falling at {}",
-            marble.velocity.y
+            marble.body.velocity.y
         );
         // resting on top of the floor, not inside it
         assert!(
-            (marble.position.y - RADIUS).abs() < 0.05,
+            (marble.position().y - RADIUS).abs() < 0.05,
             "y {}",
-            marble.position.y
+            marble.position().y
         );
     }
 
@@ -338,15 +443,15 @@ mod tests {
     fn a_graze_keeps_most_of_the_speed() {
         let wall = Aabb::from_center_size(vec3(2.0, 1.0, 0.0), vec3(1.0, 2.0, 20.0));
         let mut marble = resting();
-        marble.velocity = vec3(1.0, 0.0, 8.0);
+        marble.body.velocity = vec3(1.0, 0.0, 8.0);
 
         marble.update(vec3(0.0, 0.0, 1.0), 1.0 / 60.0, &[floor(), wall]);
 
         // the push into the wall is gone, the pace along it is not
         assert!(
-            marble.velocity.z > 7.0,
+            marble.body.velocity.z > 7.0,
             "along the wall: {}",
-            marble.velocity.z
+            marble.body.velocity.z
         );
     }
 }

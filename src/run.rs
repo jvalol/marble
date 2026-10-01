@@ -91,7 +91,7 @@ impl Default for Run {
 /// Puts a fallen marble back at its checkpoint and charges it. Says whether
 /// the marble had in fact fallen.
 pub fn handle_fall(marble: &mut Marble, course: &Course, run: &mut Run) -> bool {
-    if !course.has_fallen(marble.position) {
+    if !course.has_fallen(marble.position()) {
         return false;
     }
 
@@ -167,19 +167,19 @@ mod tests {
         course.update_checkpoint(checkpoint);
 
         let mut marble = Marble::new(vec3(0.0, course.floor_level - 5.0, 0.0));
-        marble.velocity = vec3(3.0, -20.0, 1.0);
+        marble.body.velocity = vec3(3.0, -20.0, 1.0);
         let mut run = Run::new();
         run.first_move();
 
         assert!(handle_fall(&mut marble, &course, &mut run));
 
         assert!(
-            (marble.position - checkpoint).length() < 1e-3,
+            (marble.position() - checkpoint).length() < 1e-3,
             "{:?}",
-            marble.position
+            marble.position()
         );
         assert_eq!(
-            marble.velocity,
+            marble.body.velocity,
             glam::Vec3::ZERO,
             "it should arrive at rest"
         );
@@ -192,10 +192,10 @@ mod tests {
         let mut marble = Marble::new(vec3(0.0, course.floor_level - 1.0, 0.0));
 
         handle_fall(&mut marble, &course, &mut run);
-        marble.position.y = course.floor_level - 1.0;
+        marble.body.position.y = course.floor_level - 1.0;
         handle_fall(&mut marble, &course, &mut run);
         // back on the course, so this one is not a fall
-        marble.position = course.start;
+        marble.body.position = course.start;
         handle_fall(&mut marble, &course, &mut run);
 
         assert_eq!(run.falls, 2);
