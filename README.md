@@ -13,3 +13,7 @@ Rust and the games built on it: [pong](https://github.com/jvalol/pong),
 [tessera](https://github.com/jvalol/tessera),
 [marble](https://github.com/jvalol/marble) and
 [slider](https://github.com/jvalol/slider).
+
+---
+
+I asked AI to draft this for me. I've edited it. Any surviving AI smells are my oversight.
