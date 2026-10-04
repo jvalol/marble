@@ -46,10 +46,10 @@ the game that asked for it.
 
 **The thud is placed one ear spacing from the listener**, in the direction of
 the marble, rather than at the marble itself. The spatial output fades a sound
-by the square of its distance from the ears, and the camera sits nine units back
-by default and twenty at full zoom, so a thud at the marble's own position would
-arrive between a hundredth and a four hundredth of its volume. Silent, which is
-what the first attempt at this was.
+by the square of its distance from the ears, and the camera sits nine units
+back by default and twenty at full zoom. A thud at the marble's own position
+would arrive between a hundredth and a four hundredth of its volume. Silent,
+which is what the first attempt at this was.
 
 Distance carries nothing here in any case. The camera follows the marble, so it
 is always about the same distance away, and only the direction is worth hearing.
