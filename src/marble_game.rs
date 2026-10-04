@@ -303,6 +303,12 @@ impl Game for MarbleGame {
     }
 
     fn focus_changed(&mut self, focus: bool) {
+        // a staged run is photographed from behind the terminal and never has
+        // focus, so pausing on losing it would photograph the pause screen
+        if crate::staged() {
+            return;
+        }
+
         if focus {
             self.run.resume();
         } else {
