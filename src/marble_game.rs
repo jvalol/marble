@@ -5,6 +5,7 @@ use blitzkit::geometry::Geometry;
 use blitzkit::keyboard::KeyboardInput;
 use blitzkit::mesh::{MeshData, Transform};
 use blitzkit::mouse::MouseInput;
+use blitzkit::notice;
 use blitzkit::renderer::render_text::{RenderText, TextRenderer, UNBOUNDED_F32};
 use blitzkit::renderer::scene::{MeshId, Scene};
 use blitzkit::renderer::Renderer;
@@ -182,7 +183,7 @@ impl Game for MarbleGame {
     fn update(
         &mut self,
         dt: f32,
-        _geometry: &mut Geometry,
+        geometry: &mut Geometry,
         text_renderer: &mut TextRenderer,
         sound_system: &SoundSystem,
     ) {
@@ -230,7 +231,7 @@ impl Game for MarbleGame {
         self.input.clear_frame();
 
         text_renderer.reset();
-        self.draw_text(text_renderer);
+        self.draw_text(geometry, text_renderer);
     }
 
     fn draw(&mut self, scene: &mut Scene, camera: &mut Camera) {
@@ -318,7 +319,7 @@ impl Game for MarbleGame {
 }
 
 impl MarbleGame {
-    fn draw_text(&self, text_renderer: &mut TextRenderer) {
+    fn draw_text(&self, geometry: &mut Geometry, text_renderer: &mut TextRenderer) {
         let line = |text: String, y: f32, size: f32| RenderText {
             position: vec2(20.0, y),
             color: vec4(1.0, 1.0, 1.0, 1.0),
@@ -327,7 +328,7 @@ impl MarbleGame {
             ..Default::default()
         };
 
-        match self.run.phase {
+        let lines: Vec<RenderText> = match self.run.phase {
             Phase::Finished => {
                 // One text each rather than one with newlines in it. The lines
                 // came out a size apart, and the blank line before the prompt
@@ -344,8 +345,9 @@ impl MarbleGame {
                     String::from("enter to run it again"),
                 ];
 
-                for (n, text) in done.into_iter().enumerate() {
-                    text_renderer.push_render_text(RenderText {
+                done.into_iter()
+                    .enumerate()
+                    .map(|(n, text)| RenderText {
                         position: vec2(self.width * 0.5, FINISH_TOP + n as f32 * FINISH_APART),
                         bounds: (UNBOUNDED_F32, UNBOUNDED_F32).into(),
                         color: vec4(1.0, 1.0, 1.0, 1.0),
@@ -353,22 +355,24 @@ impl MarbleGame {
                         size: FINISH_SIZE,
                         centered: true,
                         ..Default::default()
-                    });
-                }
+                    })
+                    .collect()
             }
             _ => {
-                text_renderer.push_render_text(line(clock(self.run.time), 20.0, 24.0));
-                text_renderer.push_render_text(line(
-                    format!(
-                        "gems {} of {}   falls {}   speed {:.1}",
-                        self.course.collected(),
-                        self.course.gem_count(),
-                        self.run.falls,
-                        self.marble.speed()
+                let mut running = vec![
+                    line(clock(self.run.time), 20.0, 24.0),
+                    line(
+                        format!(
+                            "gems {} of {}   falls {}   speed {:.1}",
+                            self.course.collected(),
+                            self.course.gem_count(),
+                            self.run.falls,
+                            self.marble.speed()
+                        ),
+                        52.0,
+                        14.0,
                     ),
-                    52.0,
-                    14.0,
-                ));
+                ];
 
                 let hint = match self.run.phase {
                     Phase::Ready => "wasd rolls, drag turns, space locks the cursor",
@@ -376,9 +380,24 @@ impl MarbleGame {
                     _ => "",
                 };
                 if !hint.is_empty() {
-                    text_renderer.push_render_text(line(String::from(hint), 76.0, 14.0));
+                    running.push(line(String::from(hint), 76.0, 14.0));
                 }
+
+                running
             }
+        };
+
+        // the readout goes on a panel, so it reads over the course rather than
+        // into it. See blitzkit's spec 0038.
+        geometry.reset();
+        if let Some(frame) = notice::framing_all(&lines) {
+            for quad in frame.iter() {
+                geometry.push_quad(quad);
+            }
+        }
+
+        for line in lines {
+            text_renderer.push_render_text(line);
         }
     }
 }
@@ -415,7 +434,7 @@ mod tests {
         game.run.phase = Phase::Finished;
 
         let mut text = TextRenderer::new();
-        game.draw_text(&mut text);
+        game.draw_text(&mut Geometry::new(), &mut text);
 
         text.render_texts
     }
