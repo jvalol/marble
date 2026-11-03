@@ -419,6 +419,44 @@ pub fn clock(seconds: f32) -> String {
 mod tests {
     use super::*;
 
+    /// How big the picture is: the engine's own size, said once there and
+    /// read here, per its spec 0062.
+    const WIDE: u32 = blitzkit::picture::SIZE.0;
+    const TALL: u32 = blitzkit::picture::SIZE.1;
+
+    /// The course from the start, held against a picture of it. Spec 0007.
+    ///
+    /// **Nothing is staged, because the opening frame is the photograph.**
+    /// marble is the only one of these that photographs what it opens on:
+    /// the marble on the first slab with the course ahead of it, the gems
+    /// along it and the two ramps. `--screenshot` here only keeps the game
+    /// from pausing when it loses focus, which a test never does.
+    ///
+    /// One `update` at no time at all, so the camera is worked out from
+    /// where the marble is rather than left wherever it was made, and
+    /// nothing rolls between that and the shutter.
+    #[test]
+    fn the_course_from_the_start_looks_right() {
+        let reference = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/pictures/from-the-start.png");
+
+        blitzkit::picture::drawn_looks_right(&reference, (WIDE, TALL), |renderer| {
+            let mut game = MarbleGame::new();
+            let mut geometry = Geometry::new();
+            let mut text = TextRenderer::new();
+            let sound = SoundSystem::new();
+            let mut scene = Scene::new();
+            let mut camera = Camera::new();
+
+            game.load(renderer);
+            game.initialize(&mut geometry, &mut text, &sound, (WIDE as f32, TALL as f32));
+            game.update(0.0, &mut geometry, &mut text, &sound);
+            game.draw(&mut scene, &mut camera);
+
+            (scene, camera)
+        });
+    }
+
     #[test]
     fn the_clock_reads_as_seconds_then_minutes() {
         assert_eq!(clock(0.0), "0.00");

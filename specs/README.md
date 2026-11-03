@@ -14,6 +14,7 @@ not a priority, and it never changes once a spec exists.
 | [0004](0004-camera-and-controls.md) | The following camera, mouse and keys |
 | [0005](0005-landing-sound.md) | The thud when the marble lands |
 | [0006](0006-it-rolls.md) | Real rigid body dynamics, spin, and a skin |
+| [0007](0007-a-picture-of-the-course-from-the-start.md) | The opening frame held against a picture of it, through the engine's harness |
 
 ---
 
